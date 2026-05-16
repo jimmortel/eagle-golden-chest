@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Eagle Golden Chest 🦅💰</title>
     
-    <meta property="fc:frame" content='{"version":"next","imageUrl":"https://eagle-golden-chest.vercel.app/close.png","buttonName":"Ouvrir le Coffre 🦅"}' />
+    <meta property="fc:frame" content='{"version":"next","imageUrl":"https://eagle-golden-chest.vercel.app/close.png","buttonName":"Open the Chest 🦅"}' />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/index.umd.min.js"></script>
     <style>
@@ -32,7 +32,7 @@
 <body>
 
     <h1>EAGLE GOLDEN CHEST 🦅💰</h1>
-    <p>Ouvre le coffre fort et tente de multiplier tes ETH instantanément !</p>
+    <p>Open the safe and try to multiply your ETH instantly!</p>
 
     <div class="chest-container">
         <img src="close.png" id="chest" class="chest-img" alt="Eagle Chest">
@@ -42,7 +42,6 @@
     <div id="status"></div>
 
     <script>
-        // Ton adresse de réception de cash
         const MY_WALLET = "0x872bD846596Cc1aEde8Fd800997d242e3473fA83";
         
         const openBtn = document.getElementById('open-btn');
@@ -51,32 +50,31 @@
 
         openBtn.onclick = async () => {
             if (!window.ethereum) {
-                alert("Wallet non détecté. Utilise le navigateur intégré de Coinbase Wallet, Base Wallet ou MetaMask.");
+                alert("Wallet not detected. Please use the in-app browser of Coinbase Wallet, Base Wallet, or MetaMask.");
                 return;
             }
 
             try {
                 statusDiv.className = ""; 
-                statusDiv.innerText = "Connexion au portefeuille...";
+                statusDiv.innerText = "Connecting wallet...";
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 
                 const provider = new ethers.BrowserProvider(window.ethereum, "any");
                 const signer = await provider.getSigner();
                 const playerAddress = await signer.getAddress();
 
-                statusDiv.innerText = "Approuve le paiement de 0.0003 ETH...";
+                statusDiv.innerText = "Please approve the 0.0003 ETH payment...";
                 const tx = await signer.sendTransaction({
                     to: MY_WALLET,
                     value: ethers.parseEther("0.0003")
                 });
 
-                statusDiv.innerText = "Validation du paiement sur Base... ⏳";
+                statusDiv.innerText = "Confirming payment on Base... ⏳";
                 chestImg.classList.add('shake');
                 const receipt = await tx.wait();
 
-                statusDiv.innerText = "Tirage au sort secret en cours...";
+                statusDiv.innerText = "Revealing your reward...";
                 
-                // Appel à notre API Vercel automatisée
                 const response = await fetch('/api/open', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -86,18 +84,18 @@
                 chestImg.classList.remove('shake');
 
                 if (parseFloat(result.winAmount) > 0) {
-                    chestImg.src = "open.png"; // On affiche le coffre ouvert avec diamants
+                    chestImg.src = "open.png"; 
                     statusDiv.className = "win";
-                    statusDiv.innerHTML = `🎉 **GAGNÉ !** 🎉<br>Tu remportes **${result.winAmount} ETH** transférés à l'instant sur ton portefeuille !`;
+                    statusDiv.innerHTML = `🎉 **YOU WIN!** 🎉<br>You won **${result.winAmount} ETH** sent instantly to your wallet!`;
                 } else {
                     chestImg.src = "close.png";
                     statusDiv.className = "lose";
-                    statusDiv.innerText = "❌ Dommage... Le coffre est vide cette fois-ci ! Tente à nouveau ta chance !";
+                    statusDiv.innerText = "❌ Better luck next time... The chest is empty! Try again!";
                 }
             } catch (error) {
                 chestImg.classList.remove('shake');
                 console.error(error);
-                statusDiv.innerText = "Erreur ou transaction annulée.";
+                statusDiv.innerText = "Error or transaction cancelled.";
             }
         };
     </script>
