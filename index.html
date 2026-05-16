@@ -16,7 +16,7 @@
         .chest-img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease; }
         .chest-img.shake { animation: shake 0.5s infinite; }
         #open-btn { background: linear-gradient(135deg, #ffd700, #ffa500); color: #000; font-weight: bold; font-size: 1rem; padding: 15px 35px; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 20px rgba(255, 165, 0, 0.4); }
-        #status { margin-top: 20px; font-weight: bold; text-align: center; max-width: 300px; font-size: 0.95rem; line-height: 1.4; }
+        #status { margin-top: 20px; font-weight: bold; text-align: center; max-width: 300px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; }
         .win { color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.3); }
         .lose { color: #ff4d4d; }
         @keyframes shake {
@@ -49,21 +49,31 @@
         const statusDiv = document.getElementById('status');
 
         openBtn.onclick = async () => {
+            // 1. Vérification du wallet injecté
             if (!window.ethereum) {
-                alert("Wallet not detected. Please use the in-app browser of Coinbase Wallet, Base Wallet, or MetaMask.");
+                alert("Wallet not detected. Please restart your wallet app or use an in-app browser.");
                 return;
             }
 
             try {
                 statusDiv.className = ""; 
                 statusDiv.innerText = "Connecting wallet...";
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
                 
-                const provider = new ethers.BrowserProvider(window.ethereum, "any");
-                const signer = await provider.getSigner();
-                const playerAddress = await signer.getAddress();
+                // Demande explicite des comptes au portefeuille
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (!accounts || accounts.length === 0) {
+                    statusDiv.innerText = "Wallet connection denied.";
+                    return;
+                }
 
-                statusDiv.innerText = "Please approve the 0.0003 ETH payment...";
+                // Initialisation du provider Ethers v6
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const playerAddress = accounts[0];
+
+                statusDiv.innerText = "Requesting payment of 0.0003 ETH...";
+                
+                // Envoi de la transaction
                 const tx = await signer.sendTransaction({
                     to: MY_WALLET,
                     value: ethers.parseEther("0.0003")
@@ -71,10 +81,13 @@
 
                 statusDiv.innerText = "Confirming payment on Base... ⏳";
                 chestImg.classList.add('shake');
+                
+                // Attente de la validation sur la blockchain Base
                 const receipt = await tx.wait();
 
                 statusDiv.innerText = "Revealing your reward...";
                 
+                // Appel à ton API de tirage sur Vercel
                 const response = await fetch('/api/open', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -94,8 +107,9 @@
                 }
             } catch (error) {
                 chestImg.classList.remove('shake');
-                console.error(error);
-                statusDiv.innerText = "Error or transaction cancelled.";
+                console.error("Error details:", error);
+                // Affiche la vraie erreur retournée pour débugger facilement
+                statusDiv.innerText = "Error: " + (error.message || "Transaction cancelled.");
             }
         };
     </script>
