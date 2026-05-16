@@ -7,7 +7,8 @@
     
     <meta property="fc:frame" content='{"version":"next","imageUrl":"https://eagle-golden-chest.vercel.app/close.png","buttonName":"Open the Chest 🦅"}' />
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/index.umd.min.js"></script>
+    <script src="https://unpkg.com/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+    
     <style>
         body { background: #0a0a0a; color: #fff; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         h1 { color: #ffd700; font-size: 1.6rem; margin-bottom: 5px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); text-align: center; }
@@ -49,9 +50,15 @@
         const statusDiv = document.getElementById('status');
 
         openBtn.onclick = async () => {
-            // 1. Vérification du wallet injecté
+            // Vérification de la présence d'Ethers
+            if (typeof ethers === 'undefined') {
+                statusDiv.innerText = "Error: Loading core components, please try again in a few seconds...";
+                return;
+            }
+
+            // Vérification du wallet injecté
             if (!window.ethereum) {
-                alert("Wallet not detected. Please restart your wallet app or use an in-app browser.");
+                alert("Wallet not detected. Please use an in-app crypto browser.");
                 return;
             }
 
@@ -59,21 +66,18 @@
                 statusDiv.className = ""; 
                 statusDiv.innerText = "Connecting wallet...";
                 
-                // Demande explicite des comptes au portefeuille
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 if (!accounts || accounts.length === 0) {
                     statusDiv.innerText = "Wallet connection denied.";
                     return;
                 }
 
-                // Initialisation du provider Ethers v6
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const playerAddress = accounts[0];
 
                 statusDiv.innerText = "Requesting payment of 0.0003 ETH...";
                 
-                // Envoi de la transaction
                 const tx = await signer.sendTransaction({
                     to: MY_WALLET,
                     value: ethers.parseEther("0.0003")
@@ -82,12 +86,10 @@
                 statusDiv.innerText = "Confirming payment on Base... ⏳";
                 chestImg.classList.add('shake');
                 
-                // Attente de la validation sur la blockchain Base
                 const receipt = await tx.wait();
 
                 statusDiv.innerText = "Revealing your reward...";
                 
-                // Appel à ton API de tirage sur Vercel
                 const response = await fetch('/api/open', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -108,7 +110,6 @@
             } catch (error) {
                 chestImg.classList.remove('shake');
                 console.error("Error details:", error);
-                // Affiche la vraie erreur retournée pour débugger facilement
                 statusDiv.innerText = "Error: " + (error.message || "Transaction cancelled.");
             }
         };
